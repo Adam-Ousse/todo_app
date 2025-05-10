@@ -1,0 +1,46 @@
+
+
+dart pub global activate flutterfire_cli
+
+flutterfire configure --project=todo-app-fdcee
+
+
+✔ Which platforms should your configuration support (use arrow keys & space to select)? · android
+
+i Firebase android app com.example.todo_app is not registered on Firebase project todo-app-fdcee.
+i Registered a new Firebase android app on Firebase project todo-app-fdcee.
+
+Firebase configuration file lib\firebase_options.dart generated successfully with the following Firebase apps:
+
+Platform  Firebase App Id
+android   1:942218049627:android:c8fcab5969b546e2cd677e
+
+Learn more about using this file and next steps from the documentation:
+ > https://firebase.google.com/docs/flutter/setup
+
+
+
+ import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+
+// ...
+
+await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+);
+
+
+
+
+firestore : 
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+produciton mode
