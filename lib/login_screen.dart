@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'main_screen.dart';
 import 'signup_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,12 +13,66 @@ class _LoginScreenState extends State<LoginScreen> {
   final _userController = TextEditingController();
   final _passController = TextEditingController();
   bool _obscure = true;
+  String? _error;
+  bool _loading = false;
 
-  void _login() {
-    // For now, just go to the main screen
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const MyHomePage(title: 'Inbox')),
-    );
+  Future<void> _login() async {
+    setState(() {
+      _error = null;
+      _loading = true;
+    });
+    final username = _userController.text.trim();
+    final password = _passController.text;
+    try {
+      // Check credentials
+      final userSnap =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .where('username', isEqualTo: username)
+              .where('password', isEqualTo: password)
+              .limit(1)
+              .get();
+      if (userSnap.docs.isNotEmpty) {
+        // Log successful login
+        await FirebaseFirestore.instance.collection('logins').add({
+          'username': username,
+          'action': 'login',
+          'status': 'success',
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+        if (mounted) {
+          setState(() => _loading = false);
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const MyHomePage(title: 'Inbox')),
+          );
+        }
+      } else {
+        // Log failed login
+        await FirebaseFirestore.instance.collection('logins').add({
+          'username': username,
+          'action': 'login',
+          'status': 'failed_invalid_credentials',
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+        setState(() {
+          _error = "Invalid username or password.";
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      // Log error
+      await FirebaseFirestore.instance.collection('logins').add({
+        'username': username,
+        'action': 'login',
+        'status': 'error',
+        'error': e.toString(),
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+      setState(() {
+        _error = "Login failed. Please try again.";
+        _loading = false;
+      });
+    }
   }
 
   @override
@@ -52,15 +107,29 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
+              if (_error != null) ...[
+                const SizedBox(height: 12),
+                Text(_error!, style: const TextStyle(color: Colors.red)),
+              ],
               const SizedBox(height: 32),
-              ElevatedButton(onPressed: _login, child: const Text('Login')),
+              _loading
+                  ? const CircularProgressIndicator()
+                  : ElevatedButton(
+                    onPressed: _login,
+                    child: const Text('Login'),
+                  ),
               const SizedBox(height: 16),
               TextButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SignUpScreen()),
-                  );
-                },
+                onPressed:
+                    _loading
+                        ? null
+                        : () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const SignUpScreen(),
+                            ),
+                          );
+                        },
                 child: const Text('Don\'t have an account? Sign Up'),
               ),
             ],
