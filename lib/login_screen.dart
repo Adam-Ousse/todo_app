@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'main_screen.dart';
 import 'signup_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -40,10 +41,15 @@ class _LoginScreenState extends State<LoginScreen> {
           'status': 'success',
           'timestamp': FieldValue.serverTimestamp(),
         });
+        // Save username to SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('username', username);
         if (mounted) {
           setState(() => _loading = false);
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const MyHomePage(title: 'Inbox')),
+            MaterialPageRoute(
+              builder: (_) => MyHomePage(title: 'Inbox', username: username),
+            ),
           );
         }
       } else {

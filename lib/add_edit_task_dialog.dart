@@ -130,6 +130,7 @@ Future<Task?> showAddEditTaskDialog(BuildContext context, {Task? taskToEdit}) {
                         dueDate: newDueDate,
                         tags: newTags,
                         priority: newPriority,
+                        username: '', // Will be set in main_screen
                       ),
                     );
                   }
